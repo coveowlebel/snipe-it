@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Department;
 use Illuminate\Console\Command;
 use App\Models\Setting;
 use App\Models\Ldap;
@@ -152,6 +153,15 @@ class LdapSync extends Command
                     $item['activated'] = 0;
                 }
 
+
+                if (isset($results[$i]["department"][0])){
+                    if (!$department = Department::where('name','like','%' . $results[$i]["department"][0] . '%')->first()) {
+                        $department = new Department;
+                        $department->name = e($results[$i]["department"][0]);
+                        $department->user_id = 2;
+                        $department->save();
+                    }
+                }
                 // User exists
                 $item["createorupdate"] = 'updated';
                 if (!$user = User::where('username', $item["username"])->first()) {
@@ -167,7 +177,7 @@ class LdapSync extends Command
                 $user->email = e($item["email"]);
                 $user->employee_num = e($item["employee_number"]);
                 $user->activated = $item['activated'];
-
+                $user->department()->associate($department);
                 if ($item['ldap_location_override'] == true) {
                     $user->location_id = $item['location_id'];
                 } else if ($location) {
